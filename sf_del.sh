@@ -1,4 +1,5 @@
 #! /bin/sh
+trap "rm /tmp/sf_del.*.$$.tmp; exit 1" INT TERM
 #
 # spam filter programs by m-ito@myh.no-ip.org
 #
@@ -8,10 +9,10 @@
 #
 function show_help () {
 	echo "Usage : $0 [-w|--white|-b|--black] [-v|--vacuum] [file ...]"
-	echo "Del data from database."
-	echo "  -w, --white  add data to white database."
-	echo "  -b, --black  add data to black database."
-	echo "  -v, --vacuum vacuum after del."
+	echo "Delete data from database."
+	echo "  -w, --white  delete data from white database."
+	echo "  -b, --black  delete data from black database."
+	echo "  -v, --vacuum vacuum after delete."
 }
 #----------------------------------------------------------------------
 #
@@ -35,9 +36,9 @@ fi
 #
 SFDB_PATH=${SFDIR}/${SFDB}
 #
-maxlength=50; export maxlength
+maxlength=20; export maxlength
 tab=`echo -n -e '\t'`
-zsp=`echo -n -e '\241\241'`
+##zsp=`echo -n -e '\241\241'`
 #
 table=""
 file=""
@@ -71,25 +72,31 @@ fi
 echo "begin;" >/tmp/sf_del.1.$$.tmp
 #
 for i in `cat ${file} |\
-	nkf -e -X |\
-	kakasi -w -ieuc -oeuc |\
-	sed -e "s/${zsp}/ /g;s/${tab}/ /g" |\
-	awk '{gsub(/ /,"\n");print}' |\
-	awk 'BEGIN{ \
-		maxlength = ENVIRON["maxlength"]; \
-	} \
-	{ \
-		if (length($0) <= maxlength){ \
-			print; \
-		} \
-	}' |\
-	tr -d '"\000-\011\013-\037\177' |\
-	sort |\
-	uniq -c |\
-	sed -e "s/^ *//;s/[ ${tab}][ ${tab}]*/,/"`
+	nkf -e -X -Z0 -Z1 |\
+	tr '[:cntrl:]' "\n" |\
+	nkf -I |\
+	sed -e '/Content-Transfer-Encoding: *base64/,$d' |\
+        kakasi -w -ieuc -oeuc |\
+        tr -s ' ' |\
+        tr " " "\n" |\
+        tr -d '";' |\
+        tr -d "'" |\
+        awk 'BEGIN{ \
+                maxlength = ENVIRON["maxlength"]; \
+        } \
+        { \
+                if (length($0) > 0 && length($0) <= maxlength){ \
+                        print; \
+                } \
+        }' |\
+	tr '[:cntrl:]' "\n" |\
+	nkf -I |\
+        sort |\
+        uniq -c |\
+        sed -e "s/^[ ${tab}]*//;s/[ ${tab}][ ${tab}]*/,/"`
 do
 	count=`echo $i | cut -d, -f1`
-	term=`echo $i | cut -d, -f2-`
+	term=`echo $i | cut -d, -f2- | nkf -E -w`
 	if [ "X${term}" = "X" ]
 	then
 		: # do nothing
@@ -102,9 +109,9 @@ do
 		else
 			if [ ${result} -le ${count} ]
 			then
-				echo "delete from ${table} where term=\"${term}\"; " >>/tmp/sf_del.1.$$.tmp
+				echo "delete from ${table} where term=\"${term}\";" >>/tmp/sf_del.1.$$.tmp
 			else
-				echo "update ${table} set count=count-${count} where term=\"${term}\"; " >>/tmp/sf_del.1.$$.tmp
+				echo "update ${table} set count=count-${count} where term=\"${term}\";" >>/tmp/sf_del.1.$$.tmp
 			fi
 		fi
 	fi
@@ -116,8 +123,12 @@ sqlite3 ${SFDB_PATH}
 #
 result=`echo "select sum(count) from ${table};" |\
 	sqlite3 ${SFDB_PATH}`
+if [ "X${result}" = "X" ]
+then
+	result=0
+fi
 echo "update t_total set count=${result} where tablenm=\"${table}\";" |\
-sqlite3 ${SFDB_PATH}
+	sqlite3 ${SFDB_PATH}
 #
 echo ${vacuum} |\
 sqlite3 ${SFDB_PATH}

@@ -1,7 +1,7 @@
 
-                  sf-0.5 -- spam filter for UNIX-like systems
+                  sf-0.6 -- spam filter for UNIX-like systems
 
-Copyright (C) 2006 Masahiko Ito
+Copyright (C) 2007 Masahiko Ito
 
 These programs is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
@@ -39,6 +39,9 @@ History
   - sf_add.sh, sf_del.sh, sh_check.sh 修正(uniq -c のカウント
     値と内容のセパレータがバージョンによってTABであったりSPACE
     であったりするのに対応)。
+ ・2012/12/06 Ver. 0.6 released
+  - 小坂@岡山大学様によるGnusとの連係方法に関する情報を追加。
+  - テーブルに格納するデータの文字コードをutf-8に変更。
 
 What's this ?
 =============
@@ -49,10 +52,21 @@ What's this ?
 見込めるのでは？と思い、自分なりの仮説に基づいてフィルタを実装してみたら、結構
 いけてしまったという代物。
 
+Contribution
+============
+
+o クライアント側でのspam対策用スクリプト群sfをGnusで使う方法
+  (http://film.rlss.okayama-u.ac.jp/~kgk/sf+/)
+
+  小坂@岡山大学様がsfとGnusを連係させるスクリプト等を開発されました。詳しくは、
+  sf+.tar.gz内の 00readme.txtを御覧ください。
+
+  小坂様ありがとうございました。(2007/02/27) 
+
 Preinstall
 ==========
 
-sf-0.5は、以下のソフトウェアを利用しています。事前にインストールが必要です。
+sf-0.6は、以下のソフトウェアを利用しています。事前にインストールが必要です。
 
  ・ KAKASI - 漢字→かな(ローマ字)変換プログラム (http://kakasi.namazu.org/)
  ・ SQLite home page (http://www.sqlite.org/)
@@ -62,8 +76,8 @@ sf-0.5は、以下のソフトウェアを利用しています。事前にインストールが必要です。
 Install
 =======
 
- ・ tar xvzf sf-0.5.tar.gz
- ・ cd sf-0.5
+ ・ tar xvzf sf-0.6.tar.gz
+ ・ cd sf-0.6
  ・ cp sf-*.sh /anywhere/bin/
  ・ mkdir ~/.sf
 

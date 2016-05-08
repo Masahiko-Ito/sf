@@ -1,4 +1,5 @@
 #! /bin/sh
+trap "exit 1" INT TERM
 #
 # spam filter programs by m-ito@myh.no-ip.org
 #

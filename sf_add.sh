@@ -1,4 +1,5 @@
 #! /bin/sh
+trap "rm /tmp/sf_add.*.$$.tmp; exit 1" INT TERM
 #
 # spam filter programs by m-ito@myh.no-ip.org
 #
@@ -35,9 +36,9 @@ fi
 #
 SFDB_PATH=${SFDIR}/${SFDB}
 #
-maxlength=50; export maxlength
+maxlength=20; export maxlength
 tab=`echo -n -e '\t'`
-zsp=`echo -n -e '\241\241'`
+##zsp=`echo -n -e '\241\241'`
 #
 table=""
 file=""
@@ -71,25 +72,31 @@ fi
 echo "begin;" >/tmp/sf_add.1.$$.tmp
 #
 for i in `cat ${file} |\
-	nkf -e -X |\
+	nkf -e -X -Z0 -Z1 |\
+	tr '[:cntrl:]' "\n" |\
+	nkf -I |\
+	sed -e '/Content-Transfer-Encoding: *base64/,$d' |\
 	kakasi -w -ieuc -oeuc |\
-	sed -e "s/${zsp}/ /g;s/${tab}/ /g" |\
-	awk '{gsub(/ /,"\n");print}' |\
-	awk 'BEGIN{\
-		maxlength = ENVIRON["maxlength"];\
-	}\
-	{\
-		if (length($0) <= maxlength){\
-			print;\
-		}\
+	tr -s ' ' |\
+	tr " " "\n" |\
+	tr -d '";' |\
+	tr -d "'" |\
+	awk 'BEGIN{ \
+		maxlength = ENVIRON["maxlength"]; \
+	} \
+	{ \
+		if (length($0) > 0 && length($0) <= maxlength){ \
+			print; \
+		} \
 	}' |\
-	tr -d '"\000-\011\013-\037\177' |\
+	tr '[:cntrl:]' "\n" |\
+	nkf -I |\
 	sort |\
 	uniq -c |\
-	sed -e "s/^ *//;s/[ ${tab}][ ${tab}]*/,/"`
+	sed -e "s/^[ ${tab}]*//;s/[ ${tab}][ ${tab}]*/,/"`
 do
 	count=`echo $i | cut -d, -f1`
-	term=`echo $i | cut -d, -f2-`
+	term=`echo $i | cut -d, -f2- | nkf -E -w`
 	if [ "X${term}" = "X" ]
 	then
 		: # do nothing
