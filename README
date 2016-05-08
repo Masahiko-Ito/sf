@@ -1,5 +1,5 @@
 
-                  sf-0.1 -- spam filter for UNIX-like systems
+                  sf-0.2 -- spam filter for UNIX-like systems
 
 Copyright (C) 2006 Masahiko Ito
 
@@ -22,7 +22,10 @@ Mail suggestions and bug reports for these programs to
 History
 =======
 
- ・ 2006/10/10 Ver. 0.1 release (1st)
+ ・ 2006/10/10 Ver. 0.1 released (1st)
+ ・ 2006/10/13 Ver. 0.2 released
+  - sf_check.shの処理効率化(sqlite3コマンド呼出回数の削減)。
+  - create table 一部項目の型をlong long intからintegerに修正。
 
 What's this ?
 =============
@@ -34,7 +37,7 @@ What's this ?
 Preinstall
 ==========
 
-sf-0.1は、以下のソフトウェアを利用しています。事前にインストールが必要です。
+sf-0.2は、以下のソフトウェアを利用しています。事前にインストールが必要です。
 
  ・ KAKASI - 漢字→かな(ローマ字)変換プログラム (http://kakasi.namazu.org/)
  ・ SQLite home page (http://www.sqlite.org/)
@@ -42,8 +45,8 @@ sf-0.1は、以下のソフトウェアを利用しています。事前にインストールが必要です。
 Install
 =======
 
- ・ tar xvzf sf-0.1.tar.gz
- ・ cd sf-0.1
+ ・ tar xvzf sf-0.2.tar.gz
+ ・ cd sf-0.2
  ・ cp sf-*.sh /anywhere/bin/
  ・ mkdir ~/.sf
 
@@ -56,11 +59,11 @@ Algorithm
 
 create table t_white (
   term    text primary key,
-  count   long long int
+  count   integer
 );
 create table t_black (
   term    text primary key,
-  count   long long int
+  count   integer
 );
 
 あるメールに関して検査を行う場合、まずそのメール本文を「単語(tango1〜n)」に分解

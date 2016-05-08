@@ -37,15 +37,15 @@ rm -f ${SFDB_PATH}
 sqlite3 ${SFDB_PATH} <<__EOF__
 create table t_white (
   term    text primary key,
-  count   long long int
+  count   integer
 );
 create table t_black (
   term    text primary key,
-  count   long long int
+  count   integer
 );
 create table t_total (
   tablenm text primary key,
-  count   long long int
+  count   integer
 );
 insert into t_total values("t_white",0);
 insert into t_total values("t_black",0);

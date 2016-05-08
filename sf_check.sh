@@ -40,7 +40,7 @@ maxlength=50; export maxlength
 tab=`echo -n -e '\t'`
 zsp=`echo -n -e '\241\241'`
 #
-table=""
+table=""; export table
 file=""
 #
 while [ $# != 0 ]
@@ -65,12 +65,6 @@ then
 	exit 0
 fi
 #
-w_total=`echo "select count from t_total where tablenm=\"t_white\";" |\
-		sqlite3 ${SFDB_PATH}`
-b_total=`echo "select count from t_total where tablenm=\"t_black\";" |\
-		sqlite3 ${SFDB_PATH}`
-total_score=0.0
-#
 for i in `cat ${file} |\
 	nkf -e -X |\
 	kakasi -w -ieuc -oeuc |\
@@ -90,6 +84,12 @@ do
 	echo ""
 done >/tmp/sf_check.1.$$.tmp
 #
+echo ".separator \"\t\"" >/tmp/sf_check.2.$$.tmp
+echo "begin;" >>/tmp/sf_check.2.$$.tmp
+#
+echo "select \"\",count,tablenm from t_total where tablenm=\"t_white\";" >>/tmp/sf_check.2.$$.tmp
+echo "select \"\",count,tablenm from t_total where tablenm=\"t_black\";" >>/tmp/sf_check.2.$$.tmp
+#
 for i in `cat /tmp/sf_check.1.$$.tmp |\
 	sort |\
 	uniq -c |\
@@ -102,53 +102,71 @@ do
 	then
 		: # do nothing
 	else
-		w_count=`echo "select count*${count} from t_white where term=\"${term}\";" |\
-			sqlite3 ${SFDB_PATH}`
-		if [ "X${w_count}" = "X" ]
-		then
-			w_count=0
-		fi
-#
-		b_count=`echo "select count*${count} from t_black where term=\"${term}\";" |\
-			sqlite3 ${SFDB_PATH}`
-		if [ "X${b_count}" = "X" ]
-		then
-			b_count=0
-		fi
-#
-		if [ ${w_count} = "0" -a ${b_count} = "0" ]
-		then
-			: # do nothing
-		else
-			score=`echo "scale=10;((${w_count}/${w_total}) / ((${b_count} / ${b_total}) + (${w_count} / ${w_total}))) - 0.5" | bc`
-			total_score=`echo "scale=10;${total_score} + ${score}" | bc`
-		fi
+		echo "select t_white.term,t_white.count*${count},t_black.count*${count} from t_white left join t_black on t_white.term = t_black.term where t_white.term=\"${term}\";" >>/tmp/sf_check.2.$$.tmp
+		echo "select t_black.term,t_white.count*${count},t_black.count*${count} from t_black left join t_white on t_white.term = t_black.term where t_black.term=\"${term}\";" >>/tmp/sf_check.2.$$.tmp
 	fi
 done
 #
+echo "end;" >>/tmp/sf_check.2.$$.tmp
+#
+cat /tmp/sf_check.2.$$.tmp |\
+sqlite3 ${SFDB_PATH} |\
+sort |\
+uniq |\
+awk 'BEGIN{
+	FS = "\t";
+	w_total = 0; \
+	b_total = 0; \
+	total_score = 0.0;
+	table = ENVIRON["table"]; \
+}
+{
+	if (NR < 3){
+		if ($3 == "t_white"){
+			w_total = $2;
+		}
+		if ($3 == "t_black"){
+			b_total = $2;
+		}
+	}
+#
+	if ($2 == ""){
+		w_count = 0;
+	}else{
+		w_count = $2;
+	}
+#
+	if ($3 == ""){
+		b_count = 0;
+	}else{
+		b_count = $3;
+	}
+#
+	if (w_total == 0 || b_total == 0 || (w_count == 0 && b_count == 0)){
+		# do nothing 
+	}else{
+		total_score += (((w_count / w_total) / ((b_count / b_total) + (w_count / w_total))) - 0.5);
+	}
+}
+END{
+	print total_score;
+	if (table == "t_white"){
+		if (total_score < 0.0){
+			stat = 1;
+		}else{
+			stat = 0;
+		}
+	}else{
+		if (total_score < 0.0){
+			stat = 0;
+		}else{
+			stat = 1;
+		}
+	}
+	exit stat;
+}'
+stat=$?
+#
 rm /tmp/sf_check.*.$$.tmp
 #
-echo ${total_score}
-#
-if [ ${table} = "t_white" ]
-then
-	echo ${total_score} |\
-	awk '{
-		if ($0 >= 0){
-			exit 0;
-		}else{
-			exit 1;
-		}
-	}'
-else
-	echo ${total_score} |\
-	awk '{
-		if ($0 >= 0){
-			exit 1;
-		}else{
-			exit 0;
-		}
-	}'
-fi
-#
-exit $?
+exit ${stat}
