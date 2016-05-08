@@ -1,0 +1,158 @@
+
+                  sf-0.1 -- spam filter for UNIX-like systems
+
+Copyright (C) 2006 Masahiko Ito
+
+These programs is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 2 of the License, or (at your option) any later
+version.
+
+These programs is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+these programs; if not, write to the Free Software Foundation, Inc., 59 Temple
+Place, Suite 330, Boston, MA 02111-1307 USA
+
+Mail suggestions and bug reports for these programs to
+"Masahiko Ito" <m-ito@myh.no-ip.org>
+
+History
+=======
+
+ ・ 2006/10/10 Ver. 0.1 release (1st)
+
+What's this ?
+=============
+
+ベイズ理論を理解しづらいと感じたお馬鹿な私が、もっとシンプルな考え方でも効果が
+見込めるのでは？と思い、自分なりの仮説に基づいてフィルタを実装してみたら、結構
+いけてしまったという代物。
+
+Preinstall
+==========
+
+sf-0.1は、以下のソフトウェアを利用しています。事前にインストールが必要です。
+
+ ・ KAKASI - 漢字→かな(ローマ字)変換プログラム (http://kakasi.namazu.org/)
+ ・ SQLite home page (http://www.sqlite.org/)
+
+Install
+=======
+
+ ・ tar xvzf sf-0.1.tar.gz
+ ・ cd sf-0.1
+ ・ cp sf-*.sh /anywhere/bin/
+ ・ mkdir ~/.sf
+
+Algorithm
+=========
+
+非spam学習テーブル(以下whiteテーブル)は非spamメール中の「単語」と「出現回数」を
+保持し、 spam学習テーブル(以下blackテーブル)はspamメール中の「単語」と「出現回
+数」を保持します。
+
+create table t_white (
+  term    text primary key,
+  count   long long int
+);
+create table t_black (
+  term    text primary key,
+  count   long long int
+);
+
+あるメールに関して検査を行う場合、まずそのメール本文を「単語(tango1〜n)」に分解
+し、それぞれの「出現回数(count1〜n)」をカウントします。
+
+「単語(tango1)」を検索キーにしてwhiteテーブルを検索し「whiteテーブル中の出現回
+数」x「出現回数(count1)」/「whiteテーブル中の全単語の出現回数の総和」を求めます
+(white_score)。
+
+「単語(tango1)」を検索キーにしてblackテーブルを検索し「blackテーブル中の出現回
+数」x「出現回数(count1)」/「blackテーブル中の全単語の出現回数の総和」を求めます
+(black_score)。
+
+(white_score / (white_score + black_score)) - 0.5 を求め、これを「単語(tango1)
+」に対する「スコア」とする。「スコア」は-0.5〜+0.5の値を取り、マイナス値はspam
+傾向が高く、プラス値は非spam傾向が高い単語であることを意味する。
+
+以下、同様に残りの「単語」についても「スコア」を求め、「単語(tango1〜n)」の全「
+スコア」を合計し、この合計値がマイナス値ならばspamと判断する。
+
+How to use
+==========
+
+sf_init.sh
+----------
+
+$ sf_init.sh -h
+Usage : sf_init.sh
+Initialize database.
+
+spamの判断に利用するデータベースを初期化します。システムを利用する一番最初に一
+度だけ実行します。
+
+sf_add.sh
+---------
+
+$ sf_add.sh -h
+Usage : sf_add.sh [-w|--white|-b|--black] [-v|--vacuum] [file ...]
+Add data to database.
+  -w, --white  add data to white database.
+  -b, --black  add data to black database.
+  -v, --vacuum vacuum after add.
+
+データベースの学習(追加)を行います。日々やって来るspamのうち、正しくspamと判断
+出来なかった物を-bオプションで学習させます。また、非spamのうち、誤って spamと判
+断された物を-wオプションで学習させます。システムの利用前に、spam、非spam をそれ
+ぞれ100メール程度学習させておけば、90%以上(?)の精度で振り分け出来ます。
+
+sf_del.sh
+---------
+
+$ sf_del.sh -h
+Usage : sf_del.sh [-w|--white|-b|--black] [-v|--vacuum] [file ...]
+Del data from database.
+  -w, --white  add data to white database.
+  -b, --black  add data to black database.
+  -v, --vacuum vacuum after del.
+
+データベースの学習(削除)を行います。学習ミスを取り消す場合に利用します。
+
+sf_check.sh
+-----------
+
+$ sf_check.sh -h
+Usage : sf_check.sh [-w|--white|-b|--black] [file ...]
+Check file.
+  -w, --white  check white?
+  -b, --black  check black?
+return 0 when check is true.
+return 1 when check is false.
+
+入力ファイル(またはstdin)の内容を検査し、検査スコア(実数値)をstdoutに出力後、検
+査結果が真なら0、偽なら1を返します。検査スコアは、spamの場合マイナス値となり、
+spamでない場合は0.0以上の値となります。無学習の場合の検査スコアは常に 0.0以上と
+なります。
+
+procmailとの連係
+================
+
+実際のspam振り分けに関してはprocmailとの連係が良いと思います。
+
+$ cat ~/.procmailrc
+:0 HB
+* ? sf_check.sh -b
+/home/ほげ/Mail/spam/.
+
+sf_check.shによりspam(-b)である事を検査し、真であれば/home/ほげ/Mail/spam/にメ
+ールを格納します。
+
+BUGS
+====
+
+ ・ スクリプトに渡すデータに複数の文字コードが混在している場合は正しい判断が出
+    来ないかもしれません。
+
