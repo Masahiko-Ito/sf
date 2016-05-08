@@ -65,6 +65,15 @@ then
 	exit 0
 fi
 #
+echo ".separator \"\t\"" >/tmp/sf_check.1.$$.tmp
+echo "begin;" >>/tmp/sf_check.1.$$.tmp
+echo "select tablenm,count from t_total where tablenm=\"t_white\";" >>/tmp/sf_check.1.$$.tmp
+echo "select tablenm,count from t_total where tablenm=\"t_black\";" >>/tmp/sf_check.1.$$.tmp
+echo "end;" >>/tmp/sf_check.1.$$.tmp
+#
+echo ".separator \"\t\"" >/tmp/sf_check.2.$$.tmp
+echo "begin;" >>/tmp/sf_check.2.$$.tmp
+#
 for i in `cat ${file} |\
 	nkf -e -X |\
 	kakasi -w -ieuc -oeuc |\
@@ -78,22 +87,7 @@ for i in `cat ${file} |\
 			print; \
 		} \
 	}' |\
-	tr -d '"'`
-do
-	echo -n $i | tr -d '[:cntrl:]'
-	echo ""
-done >/tmp/sf_check.1.$$.tmp
-#
-echo ".separator \"\t\"" >/tmp/sf_check.2.$$.tmp
-echo "begin;" >>/tmp/sf_check.2.$$.tmp
-echo "select tablenm,count from t_total where tablenm=\"t_white\";" >>/tmp/sf_check.2.$$.tmp
-echo "select tablenm,count from t_total where tablenm=\"t_black\";" >>/tmp/sf_check.2.$$.tmp
-echo "end;" >>/tmp/sf_check.2.$$.tmp
-#
-echo ".separator \"\t\"" >/tmp/sf_check.3.$$.tmp
-echo "begin;" >>/tmp/sf_check.3.$$.tmp
-#
-for i in `cat /tmp/sf_check.1.$$.tmp |\
+	tr -d '"\000-\011\013-\037\177' |\
 	sort |\
 	uniq -c |\
 	sed -e "s/^ *//;s/${tab}/,/"`
@@ -105,18 +99,18 @@ do
 	then
 		: # do nothing
 	else
-		echo "select t_white.term,t_white.count*${count},t_black.count*${count} from t_white left join t_black on t_white.term = t_black.term where t_white.term=\"${term}\";" >>/tmp/sf_check.3.$$.tmp
-		echo "select t_black.term,t_white.count*${count},t_black.count*${count} from t_black left join t_white on t_white.term = t_black.term where t_black.term=\"${term}\";" >>/tmp/sf_check.3.$$.tmp
+		echo "select t_white.term,t_white.count*${count},t_black.count*${count} from t_white left join t_black on t_white.term = t_black.term where t_white.term=\"${term}\";" >>/tmp/sf_check.2.$$.tmp
+		echo "select t_black.term,t_white.count*${count},t_black.count*${count} from t_black left join t_white on t_white.term = t_black.term where t_black.term=\"${term}\" and t_white.term is NULL;" >>/tmp/sf_check.2.$$.tmp
 	fi
 done
 #
-echo "end;" >>/tmp/sf_check.3.$$.tmp
+echo "end;" >>/tmp/sf_check.2.$$.tmp
 #
 (
-	cat /tmp/sf_check.2.$$.tmp |\
+	cat /tmp/sf_check.1.$$.tmp |\
 	sqlite3 ${SFDB_PATH}
 #
-	cat /tmp/sf_check.3.$$.tmp |\
+	cat /tmp/sf_check.2.$$.tmp |\
 	sqlite3 ${SFDB_PATH} |\
 	sort |\
 	uniq

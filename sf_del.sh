@@ -68,6 +68,8 @@ then
 	exit 0
 fi
 #
+echo "begin;" >/tmp/sf_del.1.$$.tmp
+#
 for i in `cat ${file} |\
 	nkf -e -X |\
 	kakasi -w -ieuc -oeuc |\
@@ -81,15 +83,7 @@ for i in `cat ${file} |\
 			print; \
 		} \
 	}' |\
-	tr -d '"'`
-do
-	echo -n $i | tr -d '[:cntrl:]'
-	echo ""
-done >/tmp/sf_del.1.$$.tmp
-#
-echo "begin;" >/tmp/sf_del.2.$$.tmp
-#
-for i in `cat /tmp/sf_del.1.$$.tmp |\
+	tr -d '"\000-\011\013-\037\177' |\
 	sort |\
 	uniq -c |\
 	sed -e "s/^ *//;s/${tab}/,/"`
@@ -108,16 +102,16 @@ do
 		else
 			if [ ${result} -le ${count} ]
 			then
-				echo "delete from ${table} where term=\"${term}\"; " >>/tmp/sf_del.2.$$.tmp
+				echo "delete from ${table} where term=\"${term}\"; " >>/tmp/sf_del.1.$$.tmp
 			else
-				echo "update ${table} set count=count-${count} where term=\"${term}\"; " >>/tmp/sf_del.2.$$.tmp
+				echo "update ${table} set count=count-${count} where term=\"${term}\"; " >>/tmp/sf_del.1.$$.tmp
 			fi
 		fi
 	fi
 done
 #
-echo "end;" >>/tmp/sf_del.2.$$.tmp
-cat /tmp/sf_del.2.$$.tmp |\
+echo "end;" >>/tmp/sf_del.1.$$.tmp
+cat /tmp/sf_del.1.$$.tmp |\
 sqlite3 ${SFDB_PATH}
 #
 result=`echo "select sum(count) from ${table};" |\

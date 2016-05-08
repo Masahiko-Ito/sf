@@ -1,5 +1,5 @@
 
-                  sf-0.3 -- spam filter for UNIX-like systems
+                  sf-0.4 -- spam filter for UNIX-like systems
 
 Copyright (C) 2006 Masahiko Ito
 
@@ -30,6 +30,10 @@ History
   - READMEにnkfを利用している旨追記。
   - READMEにfetchmailに関する記述追記。
   - 一部の文字化けメールのスコアが常に0になっていたのを修正。
+ ・ 2006/10/24 Ver. 0.4 released
+  - sf_check.sh内のselect命令を見直し。
+  - sf_add.sh, sf_del.sh, sf_check.sh 不正な単語に関して操作
+    する場合があったのを修正。
 
 What's this ?
 =============
@@ -43,17 +47,18 @@ What's this ?
 Preinstall
 ==========
 
-sf-0.3は、以下のソフトウェアを利用しています。事前にインストールが必要です。
+sf-0.4は、以下のソフトウェアを利用しています。事前にインストールが必要です。
 
  ・ KAKASI - 漢字→かな(ローマ字)変換プログラム (http://kakasi.namazu.org/)
  ・ SQLite home page (http://www.sqlite.org/)
  ・ nkf Network Kanji Filter (http://sourceforge.jp/projects/nkf/)
+ ・ GNU Textutils - Text utilities (http://www.gnu.org/software/textutils/textutils.html)
 
 Install
 =======
 
- ・ tar xvzf sf-0.3.tar.gz
- ・ cd sf-0.3
+ ・ tar xvzf sf-0.4.tar.gz
+ ・ cd sf-0.4
  ・ cp sf-*.sh /anywhere/bin/
  ・ mkdir ~/.sf
 

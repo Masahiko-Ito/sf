@@ -68,28 +68,22 @@ then
 	exit 0
 fi
 #
+echo "begin;" >/tmp/sf_add.1.$$.tmp
+#
 for i in `cat ${file} |\
 	nkf -e -X |\
 	kakasi -w -ieuc -oeuc |\
 	sed -e "s/${zsp}/ /g;s/${tab}/ /g" |\
 	awk '{gsub(/ /,"\n");print}' |\
-	awk 'BEGIN{ \
-		maxlength = ENVIRON["maxlength"]; \
-	} \
-	{ \
-		if (length($0) <= maxlength){ \
-			print; \
-		} \
+	awk 'BEGIN{\
+		maxlength = ENVIRON["maxlength"];\
+	}\
+	{\
+		if (length($0) <= maxlength){\
+			print;\
+		}\
 	}' |\
-	tr -d '"'`
-do
-	echo -n $i | tr -d '[:cntrl:]'
-	echo ""
-done >/tmp/sf_add.1.$$.tmp
-#
-echo "begin;" >/tmp/sf_add.2.$$.tmp
-#
-for i in `cat /tmp/sf_add.1.$$.tmp |\
+	tr -d '"\000-\011\013-\037\177' |\
 	sort |\
 	uniq -c |\
 	sed -e "s/^ *//;s/${tab}/,/"`
@@ -104,15 +98,15 @@ do
 			sqlite3 ${SFDB_PATH}`
 		if [ "X${result}" = "X" ]
 		then
-			echo "insert into ${table} values (\"${term}\",${count});" >>/tmp/sf_add.2.$$.tmp
+			echo "insert into ${table} values (\"${term}\",${count});" >>/tmp/sf_add.1.$$.tmp
 		else
-			echo "update ${table} set count=count+${count} where term=\"${term}\"; " >>/tmp/sf_add.2.$$.tmp
+			echo "update ${table} set count=count+${count} where term=\"${term}\"; " >>/tmp/sf_add.1.$$.tmp
 		fi
 	fi
 done
 #
-echo "end;" >>/tmp/sf_add.2.$$.tmp
-cat /tmp/sf_add.2.$$.tmp |\
+echo "end;" >>/tmp/sf_add.1.$$.tmp
+cat /tmp/sf_add.1.$$.tmp |\
 sqlite3 ${SFDB_PATH}
 #
 result=`echo "select sum(count) from ${table};" |\
