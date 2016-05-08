@@ -2,3 +2,7 @@ o 2006/10/10 Ver. 0.1 first release
 o 2006/10/13 Ver. 0.2
   - sf_check.shの処理効率化(sqlite3コマンド呼出回数の削減)。
   - create table 一部項目の型をlong long intからintegerに修正。
+o 2006/10/19 Ver. 0.3
+  - READMEにnkfを利用している旨追記。
+  - READMEにfetchmailに関する記述追記。
+  - 一部の文字化けメールのスコアが常に0になっていたのを修正。

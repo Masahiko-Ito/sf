@@ -86,9 +86,12 @@ done >/tmp/sf_check.1.$$.tmp
 #
 echo ".separator \"\t\"" >/tmp/sf_check.2.$$.tmp
 echo "begin;" >>/tmp/sf_check.2.$$.tmp
+echo "select tablenm,count from t_total where tablenm=\"t_white\";" >>/tmp/sf_check.2.$$.tmp
+echo "select tablenm,count from t_total where tablenm=\"t_black\";" >>/tmp/sf_check.2.$$.tmp
+echo "end;" >>/tmp/sf_check.2.$$.tmp
 #
-echo "select \"\",count,tablenm from t_total where tablenm=\"t_white\";" >>/tmp/sf_check.2.$$.tmp
-echo "select \"\",count,tablenm from t_total where tablenm=\"t_black\";" >>/tmp/sf_check.2.$$.tmp
+echo ".separator \"\t\"" >/tmp/sf_check.3.$$.tmp
+echo "begin;" >>/tmp/sf_check.3.$$.tmp
 #
 for i in `cat /tmp/sf_check.1.$$.tmp |\
 	sort |\
@@ -102,17 +105,22 @@ do
 	then
 		: # do nothing
 	else
-		echo "select t_white.term,t_white.count*${count},t_black.count*${count} from t_white left join t_black on t_white.term = t_black.term where t_white.term=\"${term}\";" >>/tmp/sf_check.2.$$.tmp
-		echo "select t_black.term,t_white.count*${count},t_black.count*${count} from t_black left join t_white on t_white.term = t_black.term where t_black.term=\"${term}\";" >>/tmp/sf_check.2.$$.tmp
+		echo "select t_white.term,t_white.count*${count},t_black.count*${count} from t_white left join t_black on t_white.term = t_black.term where t_white.term=\"${term}\";" >>/tmp/sf_check.3.$$.tmp
+		echo "select t_black.term,t_white.count*${count},t_black.count*${count} from t_black left join t_white on t_white.term = t_black.term where t_black.term=\"${term}\";" >>/tmp/sf_check.3.$$.tmp
 	fi
 done
 #
-echo "end;" >>/tmp/sf_check.2.$$.tmp
+echo "end;" >>/tmp/sf_check.3.$$.tmp
 #
-cat /tmp/sf_check.2.$$.tmp |\
-sqlite3 ${SFDB_PATH} |\
-sort |\
-uniq |\
+(
+	cat /tmp/sf_check.2.$$.tmp |\
+	sqlite3 ${SFDB_PATH}
+#
+	cat /tmp/sf_check.3.$$.tmp |\
+	sqlite3 ${SFDB_PATH} |\
+	sort |\
+	uniq
+) |\
 awk 'BEGIN{
 	FS = "\t";
 	w_total = 0; \
@@ -122,10 +130,10 @@ awk 'BEGIN{
 }
 {
 	if (NR < 3){
-		if ($3 == "t_white"){
+		if ($1 == "t_white"){
 			w_total = $2;
 		}
-		if ($3 == "t_black"){
+		if ($1 == "t_black"){
 			b_total = $2;
 		}
 	}
