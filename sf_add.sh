@@ -86,7 +86,7 @@ for i in `cat ${file} |\
 	tr -d '"\000-\011\013-\037\177' |\
 	sort |\
 	uniq -c |\
-	sed -e "s/^ *//;s/${tab}/,/"`
+	sed -e "s/^ *//;s/[ ${tab}][ ${tab}]*/,/"`
 do
 	count=`echo $i | cut -d, -f1`
 	term=`echo $i | cut -d, -f2-`

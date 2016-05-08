@@ -1,5 +1,5 @@
 
-                  sf-0.4 -- spam filter for UNIX-like systems
+                  sf-0.5 -- spam filter for UNIX-like systems
 
 Copyright (C) 2006 Masahiko Ito
 
@@ -34,6 +34,11 @@ History
   - sf_check.sh内のselect命令を見直し。
   - sf_add.sh, sf_del.sh, sf_check.sh 不正な単語に関して操作
     する場合があったのを修正。
+ ・ 2007/02/21 Ver. 0.5 released
+  - READMEのsf_del.shの説明間違いを修正。
+  - sf_add.sh, sf_del.sh, sh_check.sh 修正(uniq -c のカウント
+    値と内容のセパレータがバージョンによってTABであったりSPACE
+    であったりするのに対応)。
 
 What's this ?
 =============
@@ -47,7 +52,7 @@ What's this ?
 Preinstall
 ==========
 
-sf-0.4は、以下のソフトウェアを利用しています。事前にインストールが必要です。
+sf-0.5は、以下のソフトウェアを利用しています。事前にインストールが必要です。
 
  ・ KAKASI - 漢字→かな(ローマ字)変換プログラム (http://kakasi.namazu.org/)
  ・ SQLite home page (http://www.sqlite.org/)
@@ -57,8 +62,8 @@ sf-0.4は、以下のソフトウェアを利用しています。事前にインストールが必要です。
 Install
 =======
 
- ・ tar xvzf sf-0.4.tar.gz
- ・ cd sf-0.4
+ ・ tar xvzf sf-0.5.tar.gz
+ ・ cd sf-0.5
  ・ cp sf-*.sh /anywhere/bin/
  ・ mkdir ~/.sf
 
@@ -130,8 +135,8 @@ sf_del.sh
 $ sf_del.sh -h
 Usage : sf_del.sh [-w|--white|-b|--black] [-v|--vacuum] [file ...]
 Del data from database.
-  -w, --white  add data to white database.
-  -b, --black  add data to black database.
+  -w, --white  del data from white database.
+  -b, --black  del data from black database.
   -v, --vacuum vacuum after del.
 
 データベースの学習(削除)を行います。学習ミスを取り消す場合に利用します。

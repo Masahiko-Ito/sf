@@ -10,3 +10,8 @@ o 2006/10/24 Ver. 0.4
   - sf_check.sh内のselect命令を見直し。
   - sf_add.sh, sf_del.sh, sf_check.sh 不正な単語に関して操作
     する場合があったのを修正。
+o 2007/02/21 Ver. 0.5
+  - READMEのsf_del.shの説明間違いを修正。
+  - sf_add.sh, sf_del.sh, sh_check.sh 修正(uniq -c のカウント
+    値と内容のセパレータがバージョンによってTABであったりSPACE
+    であったりするのに対応)。
