@@ -39,6 +39,7 @@ SFDB_PATH=${SFDIR}/${SFDB}
 #
 maxlength=20; export maxlength
 tab=`echo -n -e '\t'`
+upperKeisen=`echo -n -e '\xe2\x80\xbe'`
 ##zsp=`echo -n -e '\241\241'`
 #
 table=""; export table
@@ -68,23 +69,24 @@ fi
 #
 echo ".separator \"\t\"" >/tmp/sf_check.1.$$.tmp
 echo "begin;" >>/tmp/sf_check.1.$$.tmp
-echo "select tablenm,count from t_total where tablenm=\"t_white\";" >>/tmp/sf_check.1.$$.tmp
-echo "select tablenm,count from t_total where tablenm=\"t_black\";" >>/tmp/sf_check.1.$$.tmp
+echo "select tablenm,count from t_total where tablenm='t_white';" >>/tmp/sf_check.1.$$.tmp
+echo "select tablenm,count from t_total where tablenm='t_black';" >>/tmp/sf_check.1.$$.tmp
 echo "end;" >>/tmp/sf_check.1.$$.tmp
 #
 echo ".separator \"\t\"" >/tmp/sf_check.2.$$.tmp
 echo "begin;" >>/tmp/sf_check.2.$$.tmp
 #
 for i in `cat ${file} |\
-	nkf -e -X -Z0 -Z1 |\
-	tr '[:cntrl:]' "\n" |\
-	nkf -I |\
 	sed -e '/Content-Transfer-Encoding: *base64/,$d' |\
+	sed -e 's/<[^>]*>//g;s/<.*$//;s/^.*>//' |\
+	nkf -X -e |\
         kakasi -w -ieuc -oeuc |\
+	nkf -E -w |\
+        tr "'" ' '|\
+        tr '"' ' '|\
+	tr '[:cntrl:]' ' ' |\
         tr -s ' ' |\
-        tr " " "\n" |\
-        tr -d '";' |\
-        tr -d "'" |\
+        tr ' ' '\n' |\
         awk 'BEGIN{ \
                 maxlength = ENVIRON["maxlength"]; \
         } \
@@ -93,21 +95,20 @@ for i in `cat ${file} |\
                         print; \
                 } \
         }' |\
-	tr '[:cntrl:]' "\n" |\
-	nkf -I |\
+	tr '[:cntrl:]' '\n' |\
         sort |\
         uniq -c |\
         sed -e "s/^[ ${tab}]*//;s/[ ${tab}][ ${tab}]*/,/"`
 do
 	count=`echo $i | cut -d, -f1`
-	term=`echo $i | cut -d, -f2- | nkf -E -w`
+	term=`echo $i | cut -d, -f2-`
 #
 	if [ "X${term}" = "X" ]
 	then
 		: # do nothing
 	else
-		echo "select t_white.term,t_white.count*${count},t_black.count*${count} from t_white left join t_black on t_white.term = t_black.term where t_white.term=\"${term}\";" >>/tmp/sf_check.2.$$.tmp
-		echo "select t_black.term,t_white.count*${count},t_black.count*${count} from t_black left join t_white on t_white.term = t_black.term where t_black.term=\"${term}\" and t_white.term is NULL;" >>/tmp/sf_check.2.$$.tmp
+		echo "select t_white.term,t_white.count*${count},t_black.count*${count} from t_white left join t_black on t_white.term = t_black.term where t_white.term='${term}';" >>/tmp/sf_check.2.$$.tmp
+		echo "select t_black.term,t_white.count*${count},t_black.count*${count} from t_black left join t_white on t_white.term = t_black.term where t_black.term='${term}' and t_white.term is NULL;" >>/tmp/sf_check.2.$$.tmp
 	fi
 done
 #

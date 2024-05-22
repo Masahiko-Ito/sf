@@ -72,42 +72,42 @@ fi
 echo "begin;" >/tmp/sf_add.1.$$.tmp
 #
 for i in `cat ${file} |\
-	nkf -e -X -Z0 -Z1 |\
-	tr '[:cntrl:]' "\n" |\
-	nkf -I |\
 	sed -e '/Content-Transfer-Encoding: *base64/,$d' |\
-	kakasi -w -ieuc -oeuc |\
-	tr -s ' ' |\
-	tr " " "\n" |\
-	tr -d '";' |\
-	tr -d "'" |\
-	awk 'BEGIN{ \
-		maxlength = ENVIRON["maxlength"]; \
-	} \
-	{ \
-		if (length($0) > 0 && length($0) <= maxlength){ \
-			print; \
-		} \
-	}' |\
-	tr '[:cntrl:]' "\n" |\
-	nkf -I |\
-	sort |\
-	uniq -c |\
-	sed -e "s/^[ ${tab}]*//;s/[ ${tab}][ ${tab}]*/,/"`
+	sed -e 's/<[^>]*>//g;s/<.*$//;s/^.*>//' |\
+	nkf -X -e |\
+        kakasi -w -ieuc -oeuc |\
+	nkf -E -w |\
+        tr "'" ' '|\
+        tr '"' ' '|\
+	tr '[:cntrl:]' ' ' |\
+        tr -s ' ' |\
+        tr ' ' '\n' |\
+        awk 'BEGIN{ \
+                maxlength = ENVIRON["maxlength"]; \
+        } \
+        { \
+                if (length($0) > 0 && length($0) <= maxlength){ \
+                        print; \
+                } \
+        }' |\
+	tr '[:cntrl:]' '\n' |\
+        sort |\
+        uniq -c |\
+        sed -e "s/^[ ${tab}]*//;s/[ ${tab}][ ${tab}]*/,/"`
 do
 	count=`echo $i | cut -d, -f1`
-	term=`echo $i | cut -d, -f2- | nkf -E -w`
+	term=`echo $i | cut -d, -f2-`
 	if [ "X${term}" = "X" ]
 	then
 		: # do nothing
 	else
-		result=`echo "select term from ${table} where term=\"${term}\";" |\
+		result=`echo "select term from ${table} where term='${term}';" |\
 			sqlite3 ${SFDB_PATH}`
 		if [ "X${result}" = "X" ]
 		then
-			echo "insert into ${table} values (\"${term}\",${count});" >>/tmp/sf_add.1.$$.tmp
+			echo "insert into ${table} values ('${term}',${count});" >>/tmp/sf_add.1.$$.tmp
 		else
-			echo "update ${table} set count=count+${count} where term=\"${term}\"; " >>/tmp/sf_add.1.$$.tmp
+			echo "update ${table} set count=count+${count} where term='${term}'; " >>/tmp/sf_add.1.$$.tmp
 		fi
 	fi
 done
@@ -118,7 +118,7 @@ sqlite3 ${SFDB_PATH}
 #
 result=`echo "select sum(count) from ${table};" |\
 	sqlite3 ${SFDB_PATH}`
-echo "update t_total set count=${result} where tablenm=\"${table}\";" |\
+echo "update t_total set count=${result} where tablenm='${table}';" |\
 sqlite3 ${SFDB_PATH}
 #
 echo ${vacuum} |\

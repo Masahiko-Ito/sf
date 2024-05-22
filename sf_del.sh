@@ -9,10 +9,10 @@ trap "rm /tmp/sf_del.*.$$.tmp; exit 1" INT TERM
 #
 function show_help () {
 	echo "Usage : $0 [-w|--white|-b|--black] [-v|--vacuum] [file ...]"
-	echo "Delete data from database."
-	echo "  -w, --white  delete data from white database."
-	echo "  -b, --black  delete data from black database."
-	echo "  -v, --vacuum vacuum after delete."
+	echo "Del data from database."
+	echo "  -w, --white  add data to white database."
+	echo "  -b, --black  add data to black database."
+	echo "  -v, --vacuum vacuum after del."
 }
 #----------------------------------------------------------------------
 #
@@ -72,15 +72,16 @@ fi
 echo "begin;" >/tmp/sf_del.1.$$.tmp
 #
 for i in `cat ${file} |\
-	nkf -e -X -Z0 -Z1 |\
-	tr '[:cntrl:]' "\n" |\
-	nkf -I |\
 	sed -e '/Content-Transfer-Encoding: *base64/,$d' |\
+	sed -e 's/<[^>]*>//g;s/<.*$//;s/^.*>//' |\
+	nkf -X -e |\
         kakasi -w -ieuc -oeuc |\
+	nkf -E -w |\
+        tr "'" ' '|\
+        tr '"' ' '|\
+	tr '[:cntrl:]' ' ' |\
         tr -s ' ' |\
-        tr " " "\n" |\
-        tr -d '";' |\
-        tr -d "'" |\
+        tr ' ' '\n' |\
         awk 'BEGIN{ \
                 maxlength = ENVIRON["maxlength"]; \
         } \
@@ -89,19 +90,18 @@ for i in `cat ${file} |\
                         print; \
                 } \
         }' |\
-	tr '[:cntrl:]' "\n" |\
-	nkf -I |\
+	tr '[:cntrl:]' '\n' |\
         sort |\
         uniq -c |\
         sed -e "s/^[ ${tab}]*//;s/[ ${tab}][ ${tab}]*/,/"`
 do
 	count=`echo $i | cut -d, -f1`
-	term=`echo $i | cut -d, -f2- | nkf -E -w`
+	term=`echo $i | cut -d, -f2-`
 	if [ "X${term}" = "X" ]
 	then
 		: # do nothing
 	else
-		result=`echo "select count from ${table} where term=\"${term}\";" |\
+		result=`echo "select count from ${table} where term='${term}';" |\
 			sqlite3 ${SFDB_PATH}`
 		if [ "X${result}" = "X" ]
 		then
@@ -109,9 +109,9 @@ do
 		else
 			if [ ${result} -le ${count} ]
 			then
-				echo "delete from ${table} where term=\"${term}\";" >>/tmp/sf_del.1.$$.tmp
+				echo "delete from ${table} where term='${term}';" >>/tmp/sf_del.1.$$.tmp
 			else
-				echo "update ${table} set count=count-${count} where term=\"${term}\";" >>/tmp/sf_del.1.$$.tmp
+				echo "update ${table} set count=count-${count} where term='${term}';" >>/tmp/sf_del.1.$$.tmp
 			fi
 		fi
 	fi
@@ -127,7 +127,7 @@ if [ "X${result}" = "X" ]
 then
 	result=0
 fi
-echo "update t_total set count=${result} where tablenm=\"${table}\";" |\
+echo "update t_total set count=${result} where tablenm='${table}';" |\
 	sqlite3 ${SFDB_PATH}
 #
 echo ${vacuum} |\
